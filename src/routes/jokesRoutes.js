@@ -36,11 +36,36 @@ router.post("/approve/:id", auth, async (req, res) => {
       `${process.env.SUBMIT_JOKES_URL}/${req.params.id}`
     );
     const joke = jokeResponse.data;
-    await axios.post(process.env.DELIVER_JOKES_URL, joke);
-    res.status(200).json({ message: "Joke approved and sent for delivery." });
+    const deliveryResponse = await axios.post(
+      process.env.DELIVER_JOKES_URL,
+      joke
+    );
+
+    // Check if the joke was successfully delivered
+    if (deliveryResponse.status === 200) {
+      return res
+        .status(200)
+        .json({ message: "Joke approved and sent for delivery." });
+    }
+
+    // Handle unexpected response status
+    res.status(deliveryResponse.status).json({
+      message:
+        deliveryResponse.data.message ||
+        "Unexpected response from delivery service",
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error approving joke." });
+    if (error.response) {
+      return res.status(error.response.status).json({
+        message: error.response.data.message || "Error approving joke",
+      });
+    } else if (error.request) {
+      return res.status(500).json({ message: "No response from the server" });
+    } else {
+      return res
+        .status(500)
+        .json({ message: error.message || "Unexpected error" });
+    }
   }
 });
 
