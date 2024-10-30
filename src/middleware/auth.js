@@ -1,22 +1,17 @@
+const jwt = require("jsonwebtoken");
+
 const auth = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader) return res.sendStatus(401);
-  const [type, credentials] = authHeader.split(" ");
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token)
+    return res.status(401).json({ message: "No token, authorization denied" });
 
-  if (type !== "Basic" || !credentials) return res.sendStatus(401);
-
-  const [email, password] = Buffer.from(credentials, "base64")
-    .toString()
-    .split(":");
-
-  if (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    return next();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Token is not valid" });
   }
-
-  return res.sendStatus(403);
 };
 
 module.exports = auth;
