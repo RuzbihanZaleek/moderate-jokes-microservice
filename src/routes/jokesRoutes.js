@@ -18,8 +18,6 @@ router.get("/", auth, async (req, res) => {
 router.put("/:id", auth, async (req, res) => {
   const { content, type } = req.body;
   try {
-    // Here you might implement the logic to edit the joke
-    // For simplicity, assume we send the update back to the Submit Jokes Microservice
     await axios.put(`${process.env.SUBMIT_JOKES_URL}/${req.params.id}`, {
       content,
       type,
@@ -49,11 +47,27 @@ router.post("/approve/:id", auth, async (req, res) => {
 // Delete joke
 router.delete("/:id", auth, async (req, res) => {
   try {
-    await axios.delete(`${process.env.SUBMIT_JOKES_URL}/${req.params.id}`);
-    res.status(204).send();
+    const response = await axios.delete(
+      `${process.env.SUBMIT_JOKES_URL}/${req.params.id}`
+    );
+
+    if (response.status === 204) {
+      return res.status(204).send();
+    }
+
+    res
+      .status(response.status)
+      .json({ message: response.data.message || "Unexpected response" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error deleting joke." });
+    if (error.response) {
+      return res
+        .status(error.response.status)
+        .json({ message: error.response.data.message || "Error occurred" });
+    } else if (error.request) {
+      return res.status(500).json({ message: "No response from the server" });
+    } else {
+      return res.status(500).json({ message: error.message });
+    }
   }
 });
 
