@@ -42,8 +42,24 @@ router.post("/approve/:id", auth, async (req, res) => {
       joke
     );
 
+    // If the delivery was successful, update the joke to set isDelivered: true
+    if (deliveryResponse) {
+      await axios.put(`${process.env.SUBMIT_JOKES_URL}/${req.params.id}`, {
+        ...joke,
+        isDelivered: true,
+      });
+
+      // Send response indicating success
+      return handleResponse(res, 200, {
+        message: "Joke approved, sent for delivery, and marked as delivered.",
+      });
+    }
+
+    // Handle unexpected response status from delivery service
     handleResponse(res, deliveryResponse.status, {
-      message: "Joke approved and sent for delivery.",
+      message:
+        deliveryResponse?.data?.message ||
+        "Unexpected response from delivery service",
     });
   } catch (error) {
     handleError(res, error);
