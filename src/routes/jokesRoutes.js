@@ -4,7 +4,7 @@ const auth = require("../middleware/auth");
 const { handleResponse, handleError } = require("../utils/responseHandler");
 const router = express.Router();
 
-// Get unmoderated jokes
+// Get jokes
 router.get("/", auth, async (req, res) => {
   try {
     const response = await axios.get(process.env.SUBMIT_JOKES_URL);
@@ -32,26 +32,21 @@ router.put("/:id", auth, async (req, res) => {
 
 // Approve joke
 router.post("/approve/:id", auth, async (req, res) => {
+  const joke = req.body;
+
   try {
-    const jokeResponse = await axios.get(
-      `${process.env.SUBMIT_JOKES_URL}/${req.params.id}`
-    );
-    const joke = jokeResponse.data;
     const deliveryResponse = await axios.post(
       process.env.DELIVER_JOKES_URL,
       joke
     );
 
-    // If the delivery was successful, update the joke to set isDelivered: true
+    // If the delivery was successful, delete the joke from submitted joke list.
     if (deliveryResponse) {
-      await axios.put(`${process.env.SUBMIT_JOKES_URL}/${req.params.id}`, {
-        ...joke,
-        isDelivered: true,
-      });
+      await axios.delete(`${process.env.SUBMIT_JOKES_URL}/${req.params.id}`);
 
       // Send response indicating success
       return handleResponse(res, 200, {
-        message: "Joke approved, sent for delivery, and marked as delivered.",
+        message: "Joke approved successfully",
       });
     }
 
