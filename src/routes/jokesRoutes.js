@@ -2,20 +2,54 @@ const express = require("express");
 const axios = require("axios");
 const auth = require("../middleware/auth");
 const { handleResponse, handleError } = require("../utils/responseHandler");
+const { JOKE_SERVICE_MESSAGES } = require("../constants");
 const router = express.Router();
 
-// Get jokes
+/**
+ * @swagger
+ * tags:
+ *   name: Jokes
+ *   description: Jokes management routes
+ */
+
+/**
+ * @swagger
+ * /moderateApi/jokes:
+ *   get:
+ *     summary: Retrieve all jokes
+ *     tags: [Jokes]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of jokes
+ *       500:
+ *         description: Error retrieving jokes
+ */
 router.get("/", auth, async (req, res) => {
   try {
     const response = await axios.get(process.env.SUBMIT_JOKES_URL);
     handleResponse(res, 200, response.data);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error retrieving jokes." });
+    res.status(500).json({ message:  JOKE_SERVICE_MESSAGES.FETCH_ERROR});
   }
 });
 
-// update joke
+/**
+ * @swagger
+ * /moderateApi/jokes:
+ *   put:
+ *     summary: Update a joke
+ *     tags: [Jokes]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Joke updated successfully
+ *       500:
+ *         description: Error updating joke
+ */
 router.put("/:id", auth, async (req, res) => {
   const { content, type } = req.body;
   try {
@@ -24,13 +58,26 @@ router.put("/:id", auth, async (req, res) => {
       type,
       isModerated: true,
     });
-    handleResponse(res, 200, { message: "Joke updated successfully." });
+    handleResponse(res, 200, { message: JOKE_SERVICE_MESSAGES.UPDATE_SUCCESS });
   } catch (error) {
     handleError(res, error);
   }
 });
 
-// Approve joke
+/**
+ * @swagger
+ * /moderateApi/jokes:
+ *   post:
+ *     summary: Approve a joke
+ *     tags: [Jokes]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Joke approved successfully
+ *       500:
+ *         description: Error approving joke
+ */
 router.post("/approve/:id", auth, async (req, res) => {
   const joke = req.body;
 
@@ -46,7 +93,7 @@ router.post("/approve/:id", auth, async (req, res) => {
 
       // Send response indicating success
       return handleResponse(res, 200, {
-        message: "Joke approved successfully",
+        message: JOKE_SERVICE_MESSAGES.APPROVE_SUCCESS,
       });
     }
 
@@ -54,14 +101,27 @@ router.post("/approve/:id", auth, async (req, res) => {
     handleResponse(res, deliveryResponse.status, {
       message:
         deliveryResponse?.data?.message ||
-        "Unexpected response from delivery service",
+        JOKE_SERVICE_MESSAGES.APPROVE_ERROR,
     });
   } catch (error) {
     handleError(res, error);
   }
 });
 
-// Delete joke
+/**
+ * @swagger
+ * /moderateApi/jokes:
+ *   delete:
+ *     summary: Delete a joke
+ *     tags: [Jokes]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Joke deleted successfully
+ *       500:
+ *         description: Error deleting joke
+ */
 router.delete("/:id", auth, async (req, res) => {
   try {
     const response = await axios.delete(
